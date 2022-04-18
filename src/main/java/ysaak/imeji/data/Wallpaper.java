@@ -9,13 +9,15 @@ public class Wallpaper {
     private final int width;
     private final int height;
 
-    private final Thumbnail thumbnail;
+    private final int thumbnailWidth;
+    private final int thumbnailHeight;
 
-    public Wallpaper(String basename, int width, int height, Thumbnail thumbnail) {
+    public Wallpaper(String basename, int width, int height, int thumbnailWidth, int thumbnailHeight) {
         this.basename = basename;
         this.width = width;
         this.height = height;
-        this.thumbnail = thumbnail;
+        this.thumbnailWidth = thumbnailWidth;
+        this.thumbnailHeight = thumbnailHeight;
     }
 
     public String getBasename() {
@@ -30,8 +32,12 @@ public class Wallpaper {
         return height;
     }
 
-    public Thumbnail getThumbnail() {
-        return thumbnail;
+    public int getThumbnailWidth() {
+        return thumbnailWidth;
+    }
+
+    public int getThumbnailHeight() {
+        return thumbnailHeight;
     }
 
     @Override

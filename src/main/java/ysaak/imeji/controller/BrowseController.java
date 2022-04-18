@@ -5,7 +5,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import ysaak.imeji.config.ApplicationConfig;
-import ysaak.imeji.data.Thumbnail;
 import ysaak.imeji.data.Wallpaper;
 
 import javax.imageio.ImageIO;
@@ -18,6 +17,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
@@ -58,13 +58,12 @@ public class BrowseController {
         List<Wallpaper> result;
 
         Path wallpaperPath = Paths.get(applicationConfig.getWallpaperLocalPath());
-        final int basePathLength = wallpaperPath.toString().length() + 1; // 1 for the trailing /
-
         try (Stream<Path> walk = Files.walk(wallpaperPath)) {
             result = walk
                     .filter(p -> !Files.isDirectory(p))   // not a directory
                     .filter(this::isImageFile)       // check end with
                     .map(this::createWallpaperFromPath)
+                    .sorted(Comparator.comparing(Wallpaper::getBasename))
                     .collect(Collectors.toList());        // collect all matched to a List
         }
         catch (IOException e) {
@@ -94,13 +93,14 @@ public class BrowseController {
         }
 
         // Thumbnail generation
-        Thumbnail thumbnail = createThumbnailFromPath(path, dimension);
+        Dimension thumbnailSize = calculateThumbnailSize(dimension);
 
         return new Wallpaper(
                 getImageBasename(path),
                 dimension.width,
                 dimension.height,
-                thumbnail
+                thumbnailSize.width,
+                thumbnailSize.height
         );
     }
 
@@ -124,7 +124,7 @@ public class BrowseController {
         return dimension;
     }
 
-    private Thumbnail createThumbnailFromPath(Path wallpaperPath, Dimension wallpaperDimension) {
+    private Dimension calculateThumbnailSize(Dimension wallpaperDimension) {
         final int thumbnailWidth;
         final int thumbnailHeight;
         final double aspectRatio = wallpaperDimension.getWidth() / wallpaperDimension.getHeight();
@@ -140,8 +140,7 @@ public class BrowseController {
             thumbnailWidth = (int) (thumbnailHeight * aspectRatio);
         }
 
-        return new Thumbnail(
-                getImageBasename(wallpaperPath),
+        return new Dimension(
                 thumbnailWidth,
                 thumbnailHeight
         );
