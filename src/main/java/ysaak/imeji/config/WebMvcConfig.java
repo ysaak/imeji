@@ -20,8 +20,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        registry.addResourceHandler("/wallpapers/full/**").addResourceLocations("file:///" + applicationConfig.getWallpaperLocalPath()).setCachePeriod(0);
-        registry.addResourceHandler("/wallpapers/small/**").addResourceLocations("file:///" + applicationConfig.getWallpaperLocalPath()).setCachePeriod(0);
+        registry.addResourceHandler("/wallpapers/full/**").addResourceLocations("file:" + applicationConfig.getWallpaperLocalPath()).setCachePeriod(0);
         registry.addResourceHandler("/static/**").addResourceLocations("classpath:/static/").setCachePeriod(0);
     }
 }

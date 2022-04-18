@@ -8,9 +8,6 @@ public class ApplicationConfig {
     @Value("${imeji.wallpaper.path}")
     private String wallpaperLocalPath;
 
-    @Value("${imeji.thumbnail.path}")
-    private String thumbnailLocalPath;
-
     @Value("${imeji.thumbnail.size}")
     private int thumbnailSize;
 
@@ -20,14 +17,6 @@ public class ApplicationConfig {
 
     public void setWallpaperLocalPath(String wallpaperLocalPath) {
         this.wallpaperLocalPath = wallpaperLocalPath;
-    }
-
-    public String getThumbnailLocalPath() {
-        return thumbnailLocalPath;
-    }
-
-    public void setThumbnailLocalPath(String thumbnailLocalPath) {
-        this.thumbnailLocalPath = thumbnailLocalPath;
     }
 
     public int getThumbnailSize() {
