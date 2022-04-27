@@ -1,0 +1,2 @@
+CREATE ALIAS IF NOT EXISTS CALCULATE_COLOR_DISTANCE FOR "ysaak.imeji.db.DbFunction.calculateColorDistance";
+CREATE ALIAS IF NOT EXISTS CALCULATE_IMAGE_SIMILARITY FOR "ysaak.imeji.db.DbFunction.calculateImageSimilarity";

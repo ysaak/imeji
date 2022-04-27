@@ -1,0 +1,31 @@
+{% extends "layout" %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-3">
+            <div class="row">
+            {% for color in wallpaper.palette %}
+                <a href="/search?q=color:{{ color.color }}" class="col" style="background-color: #{{ color.color }}">
+                    &nbsp;
+                </a>
+            {% endfor %}
+            </div>
+
+            <div>
+            <h3>Data</h3>
+            Original size : {{ wallpaper.width }} x {{ wallpaper.height }}<br>
+            File size : {{ wallpaper.fileSize }}
+            </div>
+
+            <div>
+                <a href="/wallpapers/full/{{ wallpaper.id }}.png">Original file</a>
+            </div>
+        </div>
+
+        <div class="col-9">
+            <img src="/wallpapers/full/{{ wallpaper.id }}.png" class="img-fluid" width="{{ wallpaper.width }}" height="{{ wallpaper.height }}">
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,152 +1,84 @@
 package ysaak.imeji.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import ysaak.imeji.config.ApplicationConfig;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.server.ResponseStatusException;
 import ysaak.imeji.data.Wallpaper;
+import ysaak.imeji.data.WallpaperColor;
+import ysaak.imeji.dto.WallpaperViewDto;
+import ysaak.imeji.service.wallpaper.WallpaperService;
 
-import javax.imageio.ImageIO;
-import javax.imageio.ImageReader;
-import javax.imageio.stream.ImageInputStream;
-import java.awt.Dimension;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Collection;
+import javax.transaction.Transactional;
 import java.util.Comparator;
-import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Controller
+@Transactional
 public class BrowseController {
-    private static final Collection<String> IMAGE_EXTENSIONS = Arrays.asList(".png", ".jpg", ".jpeg");
-
-    private final ApplicationConfig applicationConfig;
-    private final int basePathLength;
+    private final WallpaperService wallpaperService;
 
     @Autowired
-    public BrowseController(ApplicationConfig applicationConfig) {
-        this.applicationConfig = applicationConfig;
-        Path wallpaperPath = Paths.get(applicationConfig.getWallpaperLocalPath());
-        basePathLength = wallpaperPath.toString().length() + 1; // 1 for the trailing /
+    public BrowseController(WallpaperService wallpaperService) {
+        this.wallpaperService = wallpaperService;
     }
 
     @GetMapping(path = "/")
     public String indexAction(Model model) {
-        final List<Wallpaper> wallpapers = getWallpapers();
-
+        List<Wallpaper> wallpapers = wallpaperService.findAll();
         model.addAttribute("wallpapers", wallpapers);
         return "index";
     }
 
+    @GetMapping(path = "/w/{id}")
+    public String viewAction(@PathVariable("id") final String id, Model model) {
+        Wallpaper wallpaper = wallpaperService.get(id).orElseThrow(this::notFound);
+        model.addAttribute("wallpaper", mapToViewDto(wallpaper));
+        return "view";
+    }
+
     @GetMapping(path = "/random")
     public String randomAction() {
-        final List<Wallpaper> wallpapers = getWallpapers();
-        int randomIndex = ThreadLocalRandom.current().nextInt(wallpapers.size());
-
-        return "forward:/wallpapers/full/" + wallpapers.get(randomIndex).getBasename();
+        Wallpaper wallpaper = wallpaperService.getRandom();
+        return "forward:/wallpapers/full/" + wallpaper.getId() + ".png";
     }
 
-    private List<Wallpaper> getWallpapers() {
-        List<Wallpaper> result;
-
-        Path wallpaperPath = Paths.get(applicationConfig.getWallpaperLocalPath());
-        try (Stream<Path> walk = Files.walk(wallpaperPath)) {
-            result = walk
-                    .filter(p -> !Files.isDirectory(p))   // not a directory
-                    .filter(this::isImageFile)       // check end with
-                    .map(this::createWallpaperFromPath)
-                    .sorted(Comparator.comparing(Wallpaper::getBasename))
-                    .collect(Collectors.toList());        // collect all matched to a List
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
-        }
-
-        return result;
+    @GetMapping(path = "/search")
+    public String searchAction(@RequestParam("q") final String query, Model model) {
+        List<Wallpaper> wallpapers = wallpaperService.search(query);
+        model.addAttribute("wallpapers", wallpapers);
+        return "index";
     }
 
-    private boolean isImageFile(Path path) {
-        String filename = path.toString().toLowerCase();
-        return IMAGE_EXTENSIONS.stream().anyMatch(filename::endsWith);
+    protected ResponseStatusException notFound() {
+        return new ResponseStatusException(HttpStatus.NOT_FOUND);
     }
 
-    private Wallpaper createWallpaperFromPath(Path path) {
-        final Dimension dimension;
-        try {
-            dimension = getImageDimension(path);
-        }
-        catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    private WallpaperViewDto mapToViewDto(Wallpaper wallpaper) {
+        List<WallpaperViewDto.Color> palette = wallpaper.getPalette().stream()
+                .map(this::mapColor)
+                .sorted(Comparator.comparing(WallpaperViewDto.Color::getOrder))
+                .collect(Collectors.toList());
 
-        if (dimension == null) {
-            throw new RuntimeException("Error while reading image dimension");
-        }
-
-        // Thumbnail generation
-        Dimension thumbnailSize = calculateThumbnailSize(dimension);
-
-        return new Wallpaper(
-                getImageBasename(path),
-                dimension.width,
-                dimension.height,
-                thumbnailSize.width,
-                thumbnailSize.height
+        return new WallpaperViewDto(
+                wallpaper.getId(),
+                wallpaper.getWidth(),
+                wallpaper.getHeight(),
+                wallpaper.getFileSize(),
+                palette
         );
     }
 
-    private Dimension getImageDimension(Path path) throws IOException {
-        Dimension dimension = null;
-
-        try(ImageInputStream in = ImageIO.createImageInputStream(path.toFile())) {
-            final Iterator<ImageReader> readers = ImageIO.getImageReaders(in);
-            if (readers.hasNext()) {
-                ImageReader reader = readers.next();
-                try {
-                    reader.setInput(in);
-                    dimension = new Dimension(reader.getWidth(0), reader.getHeight(0));
-                }
-                finally {
-                    reader.dispose();
-                }
-            }
-        }
-
-        return dimension;
-    }
-
-    private Dimension calculateThumbnailSize(Dimension wallpaperDimension) {
-        final int thumbnailWidth;
-        final int thumbnailHeight;
-        final double aspectRatio = wallpaperDimension.getWidth() / wallpaperDimension.getHeight();
-
-        if (wallpaperDimension.getWidth() > wallpaperDimension.getHeight()) {
-            // Wider
-            thumbnailWidth = applicationConfig.getThumbnailSize();
-            thumbnailHeight = (int) (thumbnailWidth / aspectRatio);
-        }
-        else {
-            // Taller
-            thumbnailHeight = applicationConfig.getThumbnailSize();
-            thumbnailWidth = (int) (thumbnailHeight * aspectRatio);
-        }
-
-        return new Dimension(
-                thumbnailWidth,
-                thumbnailHeight
+    private WallpaperViewDto.Color mapColor(WallpaperColor wallpaperColor) {
+        String rgbHex = String.format("%02x%02x%02x", wallpaperColor.getRed(), wallpaperColor.getGreen(), wallpaperColor.getBlue());
+        return new WallpaperViewDto.Color(
+                wallpaperColor.getOrder(),
+                rgbHex
         );
-    }
-
-    private String getImageBasename(Path path) {
-        return path.toString().substring(basePathLength);
     }
 }
