@@ -1,4 +1,4 @@
-package ysaak.imeji.service;
+package ysaak.imeji.service.upload;
 
 import org.imgscalr.Scalr;
 import org.springframework.stereotype.Service;

@@ -8,10 +8,12 @@ import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.ManyToMany;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Set;
 import java.util.StringJoiner;
 
@@ -42,6 +44,13 @@ public class Wallpaper {
 
     @OneToMany(mappedBy = "wallpaper", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private Set<WallpaperColor> palette;
+
+    @ManyToMany(cascade = CascadeType.ALL)
+    @JoinTable(
+            name = "TAG_WALLPAPER",
+            joinColumns = @JoinColumn(name = "WALL_ID"),
+            inverseJoinColumns = @JoinColumn(name = "TAG_ID"))
+    private Set<Tag> tags;
 
     public String getId() {
         return id;
@@ -99,16 +108,25 @@ public class Wallpaper {
         this.palette = palette;
     }
 
+    public Set<Tag> getTags() {
+        return tags;
+    }
+
+    public void setTags(Set<Tag> tags) {
+        this.tags = tags;
+    }
+
     @Override
     public String toString() {
         return new StringJoiner(", ", Wallpaper.class.getSimpleName() + "[", "]")
                 .add("id='" + id + "'")
                 .add("width=" + width)
                 .add("height=" + height)
-                .add("filesize=" + fileSize)
+                .add("fileSize=" + fileSize)
                 .add("hash=" + hash)
                 .add("uploadDate=" + uploadDate)
                 .add("palette=" + palette)
+                .add("tags=" + tags)
                 .toString();
     }
 }

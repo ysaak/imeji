@@ -1,6 +1,7 @@
 package ysaak.imeji.db.specification;
 
 import org.springframework.data.jpa.domain.Specification;
+import ysaak.imeji.data.Tag;
 import ysaak.imeji.data.Wallpaper;
 import ysaak.imeji.data.WallpaperColor;
 
@@ -27,6 +28,14 @@ public final class WallpaperSpecifications {
             query.distinct(true);
 
             return criteriaBuilder.lessThan(colorDistance, threshold);
+        };
+    }
+
+    public static Specification<Wallpaper> hasTag(final String tag) {
+        return (root, query, criteriaBuilder) -> {
+            SetJoin<Wallpaper, Tag> tags = root.joinSet("tags", JoinType.INNER);
+            query.distinct(true);
+            return criteriaBuilder.equal(tags.get("name"), tag);
         };
     }
 

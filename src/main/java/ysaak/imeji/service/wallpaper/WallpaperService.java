@@ -27,7 +27,7 @@ public class WallpaperService {
         this.wallpaperRepository = wallpaperRepository;
         this.wallpaperColorRepository = wallpaperColorRepository;
 
-        this.searchQueryParser = new SearchQueryParser(20.);
+        this.searchQueryParser = new SearchQueryParser(15.);
     }
 
     public List<Wallpaper> findAll() {

@@ -6,9 +6,7 @@ import ysaak.imeji.db.specification.QueryOperator;
 import ysaak.imeji.db.specification.WallpaperSpecifications;
 import ysaak.imeji.utils.ColorConverter;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -28,8 +26,6 @@ public class SearchQueryParser {
     }
 
     public Specification<Wallpaper> parse(String searchQuery) {
-
-        List<String> tags = new ArrayList<>();
         Specification<Wallpaper> specification = null;
 
         String[] searchItems = searchQuery.trim().split(" ");
@@ -53,10 +49,15 @@ public class SearchQueryParser {
                         }
                     }
                 }
-            } else {
-                // tag
-                System.out.println("Sans token = " + searchQuery);
-                tags.add(searchQuery);
+            }
+            else {
+                Specification<Wallpaper> tagSpecification = WallpaperSpecifications.hasTag(item);
+                if (specification == null) {
+                    specification = tagSpecification;
+                }
+                else {
+                    specification = specification.and(tagSpecification);
+                }
             }
         }
 
